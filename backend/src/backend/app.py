@@ -19,7 +19,7 @@ async def health_check():
     return {"status": "healthy"}
 
 
-@app.post("/traces", statuse_code=201)
+@app.post("/traces", status_code=201)
 async def traces(
     trace: TraceCreate, session_maker=deps.depends(Session)
 ) -> TraceResponse:
