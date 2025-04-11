@@ -5,13 +5,25 @@ from lagom.integrations.fast_api import FastApiIntegration
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 from backend.db.models import AIModelConfig, Trace, Base, User
+from fastapi.middleware.cors import CORSMiddleware
+
 
 # TODO: Introduce DB migrations
-Base.metadata.drop_all(bind=container[Engine])
+# Base.metadata.drop_all(bind=container[Engine])
 Base.metadata.create_all(bind=container[Engine])
 
 app = FastAPI()
 deps = FastApiIntegration(container)
+
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/health")
@@ -47,3 +59,10 @@ async def traces(
         trace_response = TraceResponse.model_validate(trace_db)
 
     return trace_response
+
+
+@app.get("/traces", response_model=list[TraceResponse])
+async def get_traces(session_maker=deps.depends(Session)) -> list[TraceResponse]:
+    with session_maker() as session:
+        traces = session.query(Trace).all()
+        return [TraceResponse.model_validate(trace) for trace in traces]
